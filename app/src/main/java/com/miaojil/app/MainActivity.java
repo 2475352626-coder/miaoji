@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
                         + "if(b){b.click();return 'sheet';}}return 'none';})()",
                 new ValueCallback<String>() {
                     @Override
-                    public void handleValue(String value) {
+                    public void onReceiveValue(String value) {
                         if (value != null && value.contains("sheet")) return;
                         if (web.canGoBack()) web.goBack();
                         else finish();
