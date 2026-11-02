@@ -19,7 +19,7 @@ import java.io.InputStream;
 public class MainActivity extends Activity {
 
     private static final String START_URL =
-            "https://appassets.androidplatform.net/assets/www/index.html";
+            "https://appassets.androidplatform.net/www/index.html";
 
     private WebView web;
 
