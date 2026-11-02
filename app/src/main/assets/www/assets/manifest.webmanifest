@@ -1,0 +1,47 @@
+{
+  "name": "喵记 · 猫粮猫砂记录",
+  "short_name": "喵记",
+  "description": "记录猫咪的猫粮什么时候开封、什么时候吃完，猫砂什么时候换、下一次什么时候换。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#FAF6F1",
+  "theme_color": "#FAF6F1",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "换猫砂",
+      "short_name": "换砂",
+      "url": "./?action=litter"
+    },
+    {
+      "name": "开封猫粮",
+      "short_name": "开粮",
+      "url": "./?action=openbag"
+    }
+  ]
+}
