@@ -9,17 +9,13 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
-import androidx.webkit.WebViewAssetLoader;
-import androidx.webkit.WebViewClientCompat;
+import java.io.IOException;
+import java.io.InputStream;
 
-/**
- * 喵记 —— 整个 App 就是一个 WebView，加载打包在 assets 里的离线网页。
- *
- * 关键点：不能直接用 file:// 加载，那样 localStorage 会被浏览器禁用，
- * 数据一刷新就没了。这里用 WebViewAssetLoader 把 assets 挂到一个
- * https 虚拟域名下，页面就有了正常的 origin，数据能正常保存。
- */
+/* MiaoJi: one WebView + the offline web app in assets/.
+   Assets are served through a virtual https origin so localStorage works. */
 public class MainActivity extends Activity {
 
     private static final String START_URL =
@@ -32,10 +28,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                .build();
-
         web = new WebView(this);
         setContentView(web, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -43,20 +35,21 @@ public class MainActivity extends Activity {
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);          // localStorage，必须开
+        s.setDomStorageEnabled(true);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setUseWideViewPort(true);
-        s.setTextZoom(100);                     // 不跟随系统字体放大，避免排版错乱
+        s.setTextZoom(100);
+
         web.setBackgroundColor(0xFFFAF6F1);
         web.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
 
-        web.setWebViewClient(new WebViewClientCompat() {
+        web.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
+                return serveFromAssets(request.getUrl().getPath());
             }
         });
 
@@ -67,6 +60,35 @@ public class MainActivity extends Activity {
         }
     }
 
+    private WebResourceResponse serveFromAssets(String path) {
+        if (path == null || path.isEmpty()) return null;
+        String p = path.startsWith("/") ? path.substring(1) : path;
+        if (p.isEmpty() || p.endsWith("/")) p = p + "index.html";
+        try {
+            InputStream in = getAssets().open(p);
+            String mime = mimeOf(p);
+            String enc = (mime.startsWith("text/")
+                    || mime.contains("javascript")
+                    || mime.contains("json")) ? "utf-8" : null;
+            return new WebResourceResponse(mime, enc, in);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static String mimeOf(String path) {
+        String p = path.toLowerCase();
+        if (p.endsWith(".html") || p.endsWith(".htm")) return "text/html";
+        if (p.endsWith(".css")) return "text/css";
+        if (p.endsWith(".js")) return "application/javascript";
+        if (p.endsWith(".json")) return "application/json";
+        if (p.endsWith(".webmanifest")) return "application/manifest+json";
+        if (p.endsWith(".png")) return "image/png";
+        if (p.endsWith(".svg")) return "image/svg+xml";
+        if (p.endsWith(".ico")) return "image/x-icon";
+        return "application/octet-stream";
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -75,11 +97,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        // 有弹层时先关弹层，没有弹层才退出 App
         web.evaluateJavascript(
-                "(function(){var l=document.getElementById('sheetLayer');" +
-                        "if(l&&!l.hidden){var b=document.querySelector('[data-close]');" +
-                        "if(b){b.click();return 'sheet';}}return 'none';})()",
+                "(function(){var l=document.getElementById('sheetLayer');"
+                        + "if(l&&!l.hidden){var b=document.querySelector('[data-close]');"
+                        + "if(b){b.click();return 'sheet';}}return 'none';})()",
                 new ValueCallback<String>() {
                     @Override
                     public void handleValue(String value) {
